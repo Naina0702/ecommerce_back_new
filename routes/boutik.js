@@ -21,6 +21,7 @@ router.post('/Nouveau_boutique', function (req, res) {
         adresse_boutique: req.body.adresse_boutique,
         contact: req.body.contact,
         facebook: req.body.facebook,
+        password: req.body.password,
     });
 
     // Enregistrez la boutique dans la base de données
