@@ -1,8 +1,6 @@
 var express = require("express");
-var mongo = require("../config/config_db");
 var router = express.Router();
 const mongoose = require('mongoose');
-const ObjectId = mongoose.Types.ObjectId;
 
 var commande = require('../modals/commande');
 var Produit = require('../modals/produit');
@@ -10,7 +8,7 @@ var Produit = require('../modals/produit');
 router.post('/nouvelle_commande/:id_boutik', async (req, res) => {
   const id_boutik_params = req.params.id_boutik;
 
-  const { id_commande, id_produit, date, qte, Valeur } = req.body;
+  const { id_client, id_produit, date, qte, Valeur, etat } = req.body;
 
   let session;
 
@@ -20,21 +18,23 @@ router.post('/nouvelle_commande/:id_boutik', async (req, res) => {
 
     // Vérifier si le produit existe en fonction de id_produit et id_boutik
     const produit = await Produit.findOne({ id_produit: id_produit, id_boutik: id_boutik_params });
+
     if (!produit) {
-      throw new Error('Stock empty. Produit non trouvé.');
+      throw new Error('STOCK EMPTY. Produit non trouvé.');
     }
 
     if (produit.qte - qte < 0) {
       throw new Error('STOCK EMPTY. Quantité insuffisante.');
     }
-
     // Mettre à jour la commande
+
     const nouvelleCommande = new commande({
-      id_commande,
+      id_client,
       id_produit,
       date,
       qte,
-      Valeur
+      Valeur,
+      etat
     });
     await nouvelleCommande.save();
 
@@ -58,26 +58,26 @@ router.post('/nouvelle_commande/:id_boutik', async (req, res) => {
 });
 
   // Route pour récupérer une commande par son ID
-router.get('/commande/:id', (req, res) => {
-    const id_commande = req.params.id;
+router.get('/commande/:id_client', (req, res) => {
+    const id_client = req.params.id_client;
   
-    // Recherchez la commande par son ID
-    Commande.findById(id_commande)
-      .then((commande) => {
-        if (commande) {
-          console.log('Commande trouvée :', commande);
-          res.json(commande);
+    // Recherchez la commande par id_client
+    commande.find({ id_client: id_client })
+      .then((commandes) => {
+        if (commandes.length > 0) {
+          console.log('Commandes trouvées :', commandes);
+          res.json(commandes);
         } else {
           console.log('Aucune commande correspondante n\'a été trouvée.');
           res.status(404).json({ message: 'Aucune commande correspondante trouvée.' });
         }
       })
       .catch((err) => {
-        console.error('Erreur lors de la recherche de la commande :', err);
-        res.status(500).json({ message: 'Erreur lors de la recherche de la commande.' });
+        console.error('Erreur lors de la recherche des commandes :', err);
+        res.status(500).json({ message: 'Erreur lors de la recherche des commandes.' });
       });
 });
-  
+
   // Route pour supprimer une commande par son ID
 router.delete('/delete_commande/:id', (req, res) => {
     const id_commande_supprimer = req.params.id;

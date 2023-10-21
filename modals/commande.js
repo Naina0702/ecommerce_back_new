@@ -2,13 +2,14 @@ const mongoose = require('mongoose');
 const Schema = mongoose.Schema;
 
 const commandeSchema = new Schema({
-    id_commande: {type:Number, unique:true},
+    id_client: String,
     id_produit: Number,
     date: Date,
     qte: Number,
     Valeur: Number,
+    etat: Number,
 });
 
-const commande = mongoose.model('commande', commandeSchema);
+const Commande = mongoose.model('Commande', commandeSchema);
 
-module.exports = commande;
+module.exports = Commande;
