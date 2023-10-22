@@ -121,5 +121,25 @@ router.get("/Chercher_produit/:valeur", (req, res) => {
   });
 });
 
+// Route pour rechercher un produit par son id_produit
+router.get('/chercher_un_produit/:id_produit', (req, res) => {
+  const id_produit = req.params.id_produit;
+
+  // Utilisez la méthode findOne de Mongoose pour rechercher le produit par son id_produit
+  produit.findOne({ id_produit: id_produit })
+    .then((produitTrouve) => {
+      if (produitTrouve) {
+        console.log('Produit trouvé :', produitTrouve);
+        res.json(produitTrouve);
+      } else {
+        console.log('Aucun produit correspondant n\'a été trouvé.');
+        res.status(404).json({ message: 'Aucun produit correspondant trouvé.' });
+      }
+    })
+    .catch((err) => {
+      console.error('Erreur lors de la recherche du produit :', err);
+      res.status(500).json({ message: 'Erreur lors de la recherche du produit.' });
+    });
+});
 
 module.exports = router;

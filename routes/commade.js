@@ -8,7 +8,9 @@ var Produit = require('../modals/produit');
 router.post('/nouvelle_commande/:id_boutik', async (req, res) => {
   const id_boutik_params = req.params.id_boutik;
 
-  const { id_client, id_produit, date, qte, Valeur, etat } = req.body;
+  const { id_client, id_produit, date, designation, qte, Valeur, etat } = req.body;
+
+  console.log(Valeur);
 
   let session;
 
@@ -32,6 +34,7 @@ router.post('/nouvelle_commande/:id_boutik', async (req, res) => {
       id_client,
       id_produit,
       date,
+      designation,
       qte,
       Valeur,
       etat
@@ -58,15 +61,18 @@ router.post('/nouvelle_commande/:id_boutik', async (req, res) => {
 });
 
   // Route pour récupérer une commande par son ID
-router.get('/commande/:id_client', (req, res) => {
+  router.get('/commande/:id_client', (req, res) => {
     const id_client = req.params.id_client;
-  
-    // Recherchez la commande par id_client
-    commande.find({ id_client: id_client })
+
+    // Recherchez la commande par id_client et état
+    commande.find({ id_client: id_client, etat: null })
       .then((commandes) => {
         if (commandes.length > 0) {
           console.log('Commandes trouvées :', commandes);
           res.json(commandes);
+
+          console.log(commandes.length);
+
         } else {
           console.log('Aucune commande correspondante n\'a été trouvée.');
           res.status(404).json({ message: 'Aucune commande correspondante trouvée.' });
@@ -78,27 +84,28 @@ router.get('/commande/:id_client', (req, res) => {
       });
 });
 
-  // Route pour supprimer une commande par son ID
-router.delete('/delete_commande/:id', (req, res) => {
-    const id_commande_supprimer = req.params.id;
-  
-    // Utilisez findOneAndDelete pour supprimer la commande
-    commande.findOneAndDelete({ id_commande: id_commande_supprimer })
-      .then((commandeSupprimee) => {
-        if (commandeSupprimee) {
-          console.log('Commande supprimée avec succès :', commandeSupprimee);
-          res.status(200).json(commandeSupprimee);
-        } else {
-          console.log('Aucune commande correspondante n\'a été trouvée.');
-          res.status(404).json({ message: 'Aucune commande correspondante trouvée.' });
-        }
-      })
-      .catch((err) => {
-        console.error('Erreur lors de la suppression de la commande :', err);
-        res.status(500).json({ message: 'Erreur lors de la suppression de la commande.' });
-      });
-  });
-  
+
+// Route pour supprimer une commande par id_client et id_produit
+router.delete('/delete_commande/:id_client/:id_produit', async (req, res) => {
+  const id_client = req.params.id_client;
+  const id_produit = req.params.id_produit;
+
+  try {
+    // Supprimez la commande avec id_client et id_produit correspondants
+    const result = await commande.deleteOne({ id_client: id_client, id_produit: id_produit });
+
+    if (result.deletedCount > 0) {
+      console.log('Commande supprimée avec succès pour id_client:', id_client, 'et id_produit:', id_produit);
+      res.status(200).json({ message: 'Commande supprimée avec succès.' });
+    } else {
+      console.log('Aucune commande correspondante n\'a été trouvée.');
+      res.status(404).json({ message: 'Aucune commande correspondante trouvée.' });
+    }
+  } catch (error) {
+    console.error('Erreur lors de la suppression de la commande :', error);
+    res.status(500).json({ message: 'Erreur lors de la suppression de la commande.' });
+  }
+});
 
 // Route pour mettre à jour une commande par son ID de commande
 router.put('/update_commande/:id_commande', async (req, res) => {
@@ -149,6 +156,47 @@ router.put('/update_commande/:id_commande', async (req, res) => {
       }
       console.error('Erreur lors de la mise à jour de la commande :', error.message);
       res.status(500).json({ message: error.message });
+  }
+});
+
+router.delete('/delete_commandes_reset/:id_client', async (req, res) => {
+  const id_client = req.params.id_client;
+
+  try {
+    // Utilisez deleteMany pour supprimer toutes les commandes ayant le même id_client et etat=0
+    const result = await commande.deleteMany({ id_client: id_client, etat: 0 });
+
+    if (result.deletedCount > 0) {
+      console.log('Toutes les commandes du même id_client avec etat=0 ont été supprimées avec succès pour id_client :', id_client);
+      res.status(200).json({ message: 'Toutes les commandes du même id_client avec etat=0 ont été supprimées avec succès.' });
+    } else {
+      console.log('Aucune commande correspondante n\'a été trouvée pour id_client :', id_client, 'avec etat=0.');
+      res.status(404).json({ message: 'Aucune commande correspondante trouvée pour id_client avec etat=0.' });
+    }
+  } catch (error) {
+    console.error('Erreur lors de la suppression des commandes :', error);
+    res.status(500).json({ message: 'Erreur lors de la suppression des commandes.' });
+  }
+});
+
+// Route pour mettre à jour l'état des commandes avec état = 0 pour le même id_client en "1"
+router.put('/valider_commandes_client/:id_client', async (req, res) => {
+  const id_client = req.params.id_client;
+
+  try {
+    // Mettre à jour l'état de toutes les commandes avec état = 0 pour le même id_client en "1"
+    const result = await commande.updateMany({ id_client: id_client, etat: null }, { $set: { etat: 1 } });
+
+    if (result.nModified > 0) {
+      console.log('État de', result.nModified, 'commandes mises à jour avec succès pour le même id_client :', id_client);
+      res.status(200).json({ message: 'État des commandes mises à jour avec succès.' });
+    } else {
+      console.log('Aucune commande avec un état de 0 correspondante n\'a été trouvée pour le même id_client :', id_client);
+      res.status(404).json({ message: 'Aucune commande avec un état de 0 correspondante trouvée pour le même id_client.' });
+    }
+  } catch (error) {
+    console.error('Erreur lors de la mise à jour de l\'état des commandes :', error);
+    res.status(500).json({ message: 'Erreur lors de la mise à jour de l\'état des commandes.' });
   }
 });
 

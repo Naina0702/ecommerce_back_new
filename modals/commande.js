@@ -5,9 +5,10 @@ const commandeSchema = new Schema({
     id_client: String,
     id_produit: Number,
     date: Date,
+    designation:String,
     qte: Number,
     Valeur: Number,
-    etat: Number,
+    etat: Number
 });
 
 const Commande = mongoose.model('Commande', commandeSchema);

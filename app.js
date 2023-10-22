@@ -5,6 +5,7 @@ const produit = require('./routes/produit');
 const client = require('./routes/client');
 const commande = require('./routes/commade'); // Correction de la typo
 const mvola = require('./routes/mvola');
+const logins = require('./routes/login');
 
 const app = express();
 
@@ -24,7 +25,8 @@ app.use('/Boutique', boutique);
 app.use('/Client', client);
 app.use('/Produit', produit);
 app.use('/Commande', commande);
+app.use('/login',logins);
 
 app.listen(3030, () => {
-  console.log("Serveur en cours d'exécution sur le port 3000...");
+  console.log("Serveur en cours d'exécution sur le port 3030...");
 });

@@ -19,9 +19,10 @@ router.post('/Nouveau_boutique', function (req, res) {
         id_boutik: req.body.id_boutik,
         nom_boutique: req.body.nom_boutique,
         adresse_boutique: req.body.adresse_boutique,
+        email_boutique:req.body.email_boutique,
         contact: req.body.contact,
         facebook: req.body.facebook,
-        password: req.body.password,
+        password: req.body.password
     });
 
     // Enregistrez la boutique dans la base de données
@@ -29,16 +30,6 @@ router.post('/Nouveau_boutique', function (req, res) {
         .then(boutique => {
             console.log('Boutique créée :', boutique);
 
-            // Maintenant, créez un compte pour le client associé à cette boutique
-            const password = crypto.randomBytes(8).toString('hex');
-            const nouveauCompte = new login({
-                type_compte: 'Boutique',
-                id_type_compte: boutique.id_boutik,
-                Password: password
-            });
-
-            // Enregistrez le compte dans la base de données
-            return nouveauCompte.save();
         })
         .then(login => {
             console.log('Compte créé :', login);
