@@ -4,6 +4,7 @@ const Schema = mongoose.Schema;
 const commandeSchema = new Schema({
     id_client: String,
     id_produit: Number,
+    id_boutik:Number,
     date: Date,
     designation:String,
     qte: Number,

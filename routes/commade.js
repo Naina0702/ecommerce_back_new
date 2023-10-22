@@ -8,7 +8,7 @@ var Produit = require('../modals/produit');
 router.post('/nouvelle_commande/:id_boutik', async (req, res) => {
   const id_boutik_params = req.params.id_boutik;
 
-  const { id_client, id_produit, date, designation, qte, Valeur, etat } = req.body;
+  const { id_client, id_produit,id_boutik, date, designation, qte, Valeur, etat } = req.body;
 
   console.log(Valeur);
 
@@ -33,6 +33,7 @@ router.post('/nouvelle_commande/:id_boutik', async (req, res) => {
     const nouvelleCommande = new commande({
       id_client,
       id_produit,
+      id_boutik:id_boutik_params,
       date,
       designation,
       qte,
