@@ -179,26 +179,63 @@ router.delete('/delete_commandes_reset/:id_client', async (req, res) => {
   }
 });
 
-// Route pour mettre à jour l'état des commandes avec état = 0 pour le même id_client en "1"
+// Route pour mettre à jour l'état des commandes avec état = null pour le même id_client en "1"
 router.put('/valider_commandes_client/:id_client', async (req, res) => {
   const id_client = req.params.id_client;
 
   try {
-    // Mettre à jour l'état de toutes les commandes avec état = 0 pour le même id_client en "1"
+    // Mettre à jour l'état de toutes les commandes avec état = null pour le même id_client en "1"
     const result = await commande.updateMany({ id_client: id_client, etat: null }, { $set: { etat: 1 } });
 
     if (result.nModified > 0) {
       console.log('État de', result.nModified, 'commandes mises à jour avec succès pour le même id_client :', id_client);
       res.status(200).json({ message: 'État des commandes mises à jour avec succès.' });
     } else {
-      console.log('Aucune commande avec un état de 0 correspondante n\'a été trouvée pour le même id_client :', id_client);
-      res.status(404).json({ message: 'Aucune commande avec un état de 0 correspondante trouvée pour le même id_client.' });
+      console.log('Aucune commande avec un état de null correspondante n\'a été trouvée pour le même id_client :', id_client);
+      res.status(404).json({ message: 'Aucune commande avec un état de null correspondante trouvée pour le même id_client.' });
     }
   } catch (error) {
     console.error('Erreur lors de la mise à jour de l\'état des commandes :', error);
-    res.status(500).json({ message: 'Erreur lors de la mise à jour de l\'état des commandes.' });
+    res.status(500).json({ message: "Erreur lors de la mise à jour de l'état des commandes."});
   }
 });
 
+// Route pour récupérer les données avec id_client et etat = null
+router.get('/donnees_id_client_etat_null/:id_client', async (req, res) => {
+  const id_client = req.params.id_client;
+
+  try {
+    // Recherchez les données avec id_client et etat = null
+    const donnees = await commande.find({ id_client: id_client, etat: null });
+
+    if (donnees.length > 0) {
+      res.status(200).json(donnees);
+    } else {
+      res.status(404).json({ message: 'Aucune donnée correspondante n\'a été trouvée.' });
+    }
+  } catch (error) {
+    console.error('Erreur lors de la recherche des données :', error);
+    res.status(500).json({ message: 'Erreur lors de la recherche des données.' });
+  }
+});
+
+
+router.get('/donnees_id_client_etat_1/:id_client', async (req, res) => {
+  const id_client = req.params.id_client;
+
+  try {
+    // Recherchez les données avec id_client et etat = null
+    const donnees = await commande.find({ id_client: id_client, etat: null });
+
+    if (donnees.length > 0) {
+      res.status(200).json(donnees);
+    } else {
+      res.status(404).json({ message: 'Aucune donnée correspondante n\'a été trouvée.' });
+    }
+  } catch (error) {
+    console.error('Erreur lors de la recherche des données :', error);
+    res.status(500).json({ message: 'Erreur lors de la recherche des données.' });
+  }
+});
 
   module.exports = router;
