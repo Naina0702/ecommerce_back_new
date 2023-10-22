@@ -225,7 +225,7 @@ router.get('/donnees_id_client_etat_1/:id_client', async (req, res) => {
 
   try {
     // Recherchez les données avec id_client et etat = null
-    const donnees = await commande.find({ id_client: id_client, etat: null });
+    const donnees = await commande.find({ id_client: id_client, etat:"1" });
 
     if (donnees.length > 0) {
       res.status(200).json(donnees);
