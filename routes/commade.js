@@ -86,77 +86,142 @@ router.post('/nouvelle_commande/:id_boutik', async (req, res) => {
 });
 
 
-// Route pour supprimer une commande par id_client et id_produit
-router.delete('/delete_commande/:id_client/:id_produit', async (req, res) => {
-  const id_client = req.params.id_client;
-  const id_produit = req.params.id_produit;
+
+
+router.delete('/supprimer_commande/:id', async (req, res) => {
+  const _id = req.params.id;
+
+  console.log(_id);
+
+  let session;
 
   try {
-    // Supprimez la commande avec id_client et id_produit correspondants
-    const result = await commande.deleteOne({ id_client: id_client, id_produit: id_produit });
+    session = await mongoose.startSession();
+    session.startTransaction();
+
+    // Récupérez la commande que vous êtes sur le point de supprimer
+    const commandeASupprimer = await commande.findOne({ _id });
+
+    if (!commandeASupprimer) {
+      throw new Error('Commande non trouvée.');
+    }
+
+    // Récupérez le produit associé à la commande
+    const produit = await Produit.findOne({ id_produit: commandeASupprimer.id_produit });
+
+    if (!produit) {
+      throw new Error('Produit non trouvé.');
+    }
+
+    // Ajoutez la quantité de la commande à la quantité du produit
+    produit.qte += commandeASupprimer.qte;
+
+    // Sauvegardez le produit mis à jour
+    await produit.save();
+
+    // Supprimez la commande
+    const result = await commande.deleteOne({ _id });
 
     if (result.deletedCount > 0) {
-      console.log('Commande supprimée avec succès pour id_client:', id_client, 'et id_produit:', id_produit);
+      console.log('Commande supprimée avec succès pour _id:', _id);
       res.status(200).json({ message: 'Commande supprimée avec succès.' });
     } else {
       console.log('Aucune commande correspondante n\'a été trouvée.');
       res.status(404).json({ message: 'Aucune commande correspondante trouvée.' });
     }
+
+    await session.commitTransaction();
+    session.endSession();
   } catch (error) {
+    if (session) {
+      await session.abortTransaction();
+      session.endSession();
+    }
     console.error('Erreur lors de la suppression de la commande :', error);
     res.status(500).json({ message: 'Erreur lors de la suppression de la commande.' });
   }
 });
 
+
 // Route pour mettre à jour une commande par son ID de commande
-router.put('/update_commande/:id_commande', async (req, res) => {
-  const id_commande_updater = req.params.id_commande;
+router.put('/update_commande/:id', async (req, res) => {
+  const commandeId = req.params.id;
   const nouvellesDonnees = req.body;
 
   let session;
 
   try {
-      session = await mongoose.startSession();
-      session.startTransaction();
+    session = await mongoose.startSession();
+    session.startTransaction();
 
-      // Rechercher la commande par son ID de commande
-      const commandeExistante = await commande.findOne({ id_commande: id_commande_updater });
+    // Rechercher la commande par son ID de commande
+    const commandeExistante = await commande.findOne({_id :commandeId});
 
-      if (!commandeExistante) {
-          throw new Error('Commande non trouvée.');
-      }
+    if (!commandeExistante) {
+      throw new Error('Commande non trouvée.');
+    }
 
-      // Rechercher le produit associé à la commande
-      const produitAssocie = await Produit.findOne({ id_produit: commandeExistante.id_produit });
+    // Rechercher le produit associé à la commande
+    const produitAssocie = await Produit.findOne({ id_produit: commandeExistante.id_produit });
 
-      if (!produitAssocie) {
-          throw new Error('STOCK EMPTY. Produit non trouvé.');
-      }
+    if (!produitAssocie) {
+      throw new Error('STOCK EMPTY. Produit non trouvé.');
+    }
 
-      // Restituer la quantité précédente au stock
-      produitAssocie.qte += commandeExistante.qte;
-      await produitAssocie.save();
+    // Calculer la différence de quantité
+    const differenceQuantite = commandeExistante.qte - nouvellesDonnees.qte ;
 
-      // Mettre à jour la commande avec les nouvelles données
-      Object.assign(commandeExistante, nouvellesDonnees);
+    console.log(differenceQuantite);
+    Object.assign(commandeExistante, nouvellesDonnees);
+
+    if(differenceQuantite == 0 ){
       await commandeExistante.save();
-
-      // Mettre à jour la quantité du produit avec la nouvelle quantité (qte) de la commande
-      produitAssocie.qte -= nouvellesDonnees.qte;
-      await produitAssocie.save();
-
       await session.commitTransaction();
       session.endSession();
-
+  
       console.log('Commande mise à jour avec succès :', commandeExistante);
       res.status(200).json(commandeExistante);
+    }
+
+    else if(differenceQuantite>0){
+      produitAssocie.qte -= differenceQuantite;
+      await produitAssocie.save();
+      await commandeExistante.save();
+      await session.commitTransaction();
+      session.endSession();
+  
+      console.log('Commande mise à jour avec succès :', commandeExistante);
+      res.status(200).json(commandeExistante);
+
+    }
+    else if(differenceQuantite<0){
+      produitAssocie.qte += differenceQuantite;
+      await produitAssocie.save();
+      await commandeExistante.save();
+      await session.commitTransaction();
+      session.endSession();
+  
+      console.log('Commande mise à jour avec succès :', commandeExistante);
+      res.status(200).json(commandeExistante);
+
+    }
+
+    // Restituer la quantité précédente au stock
+
+    // Mettre à jour la commande avec les nouvelles données
+
+    // Mettre à jour la quantité du produit avec la nouvelle quantité (qte) de la commande
+
+    // Sauvegarder les modifications
+
+
   } catch (error) {
-      if (session) {
-          await session.abortTransaction();
-          session.endSession();
-      }
-      console.error('Erreur lors de la mise à jour de la commande :', error.message);
-      res.status(500).json({ message: error.message });
+    if (session) {
+      await session.abortTransaction();
+      session.endSession();
+    }
+    console.error('Erreur lors de la mise à jour de la commande :', error.message);
+    res.status(500).json({ message: error.message });
   }
 });
 
