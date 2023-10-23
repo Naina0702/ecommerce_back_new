@@ -155,7 +155,7 @@ router.put('/update_commande/:id', async (req, res) => {
     session.startTransaction();
 
     // Rechercher la commande par son ID de commande
-    const commandeExistante = await commande.findOne({_id :commandeId});
+    const commandeExistante = await commande.findById(commandeId);
 
     if (!commandeExistante) {
       throw new Error('Commande non trouvée.');
@@ -169,52 +169,28 @@ router.put('/update_commande/:id', async (req, res) => {
     }
 
     // Calculer la différence de quantité
-    const differenceQuantite = commandeExistante.qte - nouvellesDonnees.qte ;
+    const differenceQuantite = nouvellesDonnees.qte - commandeExistante.qte;
 
-    console.log(differenceQuantite);
-    Object.assign(commandeExistante, nouvellesDonnees);
-
-    if(differenceQuantite == 0 ){
-      await commandeExistante.save();
-      await session.commitTransaction();
-      session.endSession();
-  
-      console.log('Commande mise à jour avec succès :', commandeExistante);
-      res.status(200).json(commandeExistante);
-    }
-
-    else if(differenceQuantite>0){
-      produitAssocie.qte -= differenceQuantite;
-      await produitAssocie.save();
-      await commandeExistante.save();
-      await session.commitTransaction();
-      session.endSession();
-  
-      console.log('Commande mise à jour avec succès :', commandeExistante);
-      res.status(200).json(commandeExistante);
-
-    }
-    else if(differenceQuantite<0){
+    if (differenceQuantite === 0) {
+      // Pas de changement de quantité
+      Object.assign(commandeExistante, nouvellesDonnees);
+    } else if (differenceQuantite > 0) {
+      // Augmentation de la quantité
+      Object.assign(commandeExistante, nouvellesDonnees);
       produitAssocie.qte += differenceQuantite;
-      await produitAssocie.save();
-      await commandeExistante.save();
-      await session.commitTransaction();
-      session.endSession();
-  
-      console.log('Commande mise à jour avec succès :', commandeExistante);
-      res.status(200).json(commandeExistante);
-
+    } else {
+      // Diminution de la quantité
+      Object.assign(commandeExistante, nouvellesDonnees);
+      produitAssocie.qte -= Math.abs(differenceQuantite); // Utilisez Math.abs pour obtenir la valeur absolue de la différence
     }
 
-    // Restituer la quantité précédente au stock
+    await produitAssocie.save();
+    await commandeExistante.save();
+    await session.commitTransaction();
+    session.endSession();
 
-    // Mettre à jour la commande avec les nouvelles données
-
-    // Mettre à jour la quantité du produit avec la nouvelle quantité (qte) de la commande
-
-    // Sauvegarder les modifications
-
-
+    console.log('Commande mise à jour avec succès :', commandeExistante);
+    res.status(200).json(commandeExistante);
   } catch (error) {
     if (session) {
       await session.abortTransaction();
@@ -224,6 +200,10 @@ router.put('/update_commande/:id', async (req, res) => {
     res.status(500).json({ message: error.message });
   }
 });
+
+
+
+
 
 router.delete('/delete_commandes_reset/:id_client', async (req, res) => {
   const id_client = req.params.id_client;
