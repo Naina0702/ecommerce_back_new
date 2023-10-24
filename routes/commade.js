@@ -8,7 +8,7 @@ var Produit = require('../modals/produit');
 router.post('/nouvelle_commande/:id_boutik', async (req, res) => {
   const id_boutik_params = req.params.id_boutik;
 
-  const { id_client, id_produit,id_boutik, date, designation, qte, Valeur, etat } = req.body;
+  const { id_client, id_produit,id_boutik, date, designation, qte, Valeur } = req.body;
 
   console.log(Valeur);
 
@@ -38,7 +38,7 @@ router.post('/nouvelle_commande/:id_boutik', async (req, res) => {
       designation,
       qte,
       Valeur,
-      etat
+      etat:"0"
     });
     await nouvelleCommande.save();
 
@@ -62,11 +62,11 @@ router.post('/nouvelle_commande/:id_boutik', async (req, res) => {
 });
 
   // Route pour récupérer une commande par son ID
-  router.get('/commande/:id_client', (req, res) => {
+router.get('/commande/:id_client', (req, res) => {
     const id_client = req.params.id_client;
 
     // Recherchez la commande par id_client et état
-    commande.find({ id_client: id_client, etat: null })
+    commande.find({ id_client: id_client, etat: "0" })
       .then((commandes) => {
         if (commandes.length > 0) {
           console.log('Commandes trouvées :', commandes);
@@ -84,8 +84,6 @@ router.post('/nouvelle_commande/:id_boutik', async (req, res) => {
         res.status(500).json({ message: 'Erreur lors de la recherche des commandes.' });
       });
 });
-
-
 
 
 router.delete('/supprimer_commande/:id', async (req, res) => {
@@ -202,9 +200,6 @@ router.put('/update_commande/:id', async (req, res) => {
 });
 
 
-
-
-
 router.delete('/delete_commandes_reset/:id_client', async (req, res) => {
   const id_client = req.params.id_client;
 
@@ -228,12 +223,15 @@ router.delete('/delete_commandes_reset/:id_client', async (req, res) => {
 // Route pour mettre à jour l'état des commandes avec état = null pour le même id_client en "1"
 router.put('/valider_commandes_client/:id_client', async (req, res) => {
   const id_client = req.params.id_client;
+  //const result = await commande.updateMany({ id_client: id_client, etat: "0" }, { $set: { etat: 1 } });
+
+
 
   try {
     // Mettre à jour l'état de toutes les commandes avec état = null pour le même id_client en "1"
-    const result = await commande.updateMany({ id_client: id_client, etat: null }, { $set: { etat: 1 } });
+    const result = await commande.updateMany({ id_client: id_client, etat: "0" }, { $set: { etat: 1 } });
 
-    if (result.nModified > 0) {
+    if (result.modifiedCount >= 0) {
       console.log('État de', result.nModified, 'commandes mises à jour avec succès pour le même id_client :', id_client);
       res.status(200).json({ message: 'État des commandes mises à jour avec succès.' });
     } else {
@@ -246,18 +244,19 @@ router.put('/valider_commandes_client/:id_client', async (req, res) => {
   }
 });
 
-router.put('/valider_commandes_boutique/:id_client', async (req, res) => {
-  const id_client = req.params.id_client;
+
+router.put('/valider_commandes_boutique/:id', async (req, res) => {
+  const id_ = req.params.id;
 
   try {
     // Mettre à jour l'état de toutes les commandes avec état = null pour le même id_client en "1"
-    const result = await commande.updateMany({ id_client: id_client, etat: "1" }, { $set: { etat: 2 } });
+    const result = await commande.updateOne({ _id: id_, etat: "1" }, { $set: { etat: 2 } });
 
     if (result.nModified > 0) {
-      console.log('État de', result.nModified, 'commandes mises à jour avec succès pour le même id_client :', id_client);
+      console.log('État de', result.nModified, 'commandes mises à jour avec succès pour le même id_client :',_id);
       res.status(200).json({ message: 'État des commandes mises à jour avec succès.' });
     } else {
-      console.log('Aucune commande avec un état de null correspondante n\'a été trouvée pour le même id_client :', id_client);
+      console.log('Aucune commande avec un état de null correspondante n\'a été trouvée pour le même id_client :', _id);
       res.status(404).json({ message: 'Aucune commande avec un état de null correspondante trouvée pour le même id_client.' });
     }
   } catch (error) {
